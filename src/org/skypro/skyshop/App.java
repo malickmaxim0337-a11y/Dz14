@@ -1,48 +1,70 @@
 package org.skypro.skyshop;
 
-import org.skypro.skyshop.basket.ProductBasket;
-import org.skypro.skyshop.product.Product;
+import org.skypro.skyshop.article.Article;
+import org.skypro.skyshop.product.DiscountedProduct;
+import org.skypro.skyshop.product.FixPriceProduct;
+import org.skypro.skyshop.product.SimpleProduct;
+import org.skypro.skyshop.search.BestResultNotFound;
+import org.skypro.skyshop.search.SearchEngine;
+import org.skypro.skyshop.search.Searchable;
 
 public class App {
     public static void main(String[] args) {
-        Product apple = new Product("Яблоко", 50);
-        Product bread = new Product("Хлеб", 40);
-        Product milk = new Product("Молоко", 80);
-        Product cheese = new Product("Сыр", 200);
-        Product meat = new Product("Мясо", 350);
 
-        ProductBasket basket = new ProductBasket();
+        // 1. Проверка исключений (IllegalArgumentException)
+        System.out.println("=== Проверка исключений ===");
+        try {
+            new SimpleProduct("", 100);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+        }
 
-        basket.addProduct(apple);
-        basket.addProduct(bread);
-        basket.addProduct(milk);
-        basket.addProduct(cheese);
-        basket.addProduct(meat);
+        try {
+            new SimpleProduct(null, 100);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+        }
 
-        basket.addProduct(new Product("Рыба", 300));
+        try {
+            new SimpleProduct("Телефон", -50); // Отрицательная цена
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+        }
 
-        System.out.println("\n--- Содержимое корзины ---\n");
-        basket.printBasket();
+        try {
+            new DiscountedProduct("Ноутбук", 1000, 150); // Скидка больше 100
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+        }
 
-        System.out.println("\n--- Общая стоимость ---\n");
-        System.out.println(basket.getTotalPrice());
+        System.out.println("\n=== Поиск лучшего совпадения ===");
 
-        System.out.println("\n--- Поиск 'Хлеб' ---\n");
-        System.out.println(basket.containsProductByName("Хлеб"));
+        // 2. Создаем движок и добавляем объекты
+        SearchEngine engine = new SearchEngine(10);
 
-        System.out.println("\n--- Поиск 'Шоколад' ---\n");
-        System.out.println(basket.containsProductByName("Шоколад"));
+        engine.add(new SimpleProduct("Яблоко", 50));
+        engine.add(new DiscountedProduct("Хлеб", 40, 20));
+        engine.add(new FixPriceProduct("Молоко"));
+        // Создаем статьи, где слово "яблоко" встречается несколько раз
+        engine.add(new Article("Польза яблок", "В яблоках много витаминов. Яблоко - это фрукт."));
+        engine.add(new Article("Как выбрать хлеб", "Хлеб должен быть свежим. Покупайте хлеб каждый день."));
 
-        System.out.println("\n--- Очистка корзины ---\n");
-        basket.clearBasket();
+        // 3. Сценарий: объект существует
+        try {
+            Searchable best = engine.findBestMatch("яблоко");
+            System.out.println("Лучший результат для 'яблоко':");
+            System.out.println(best.getStringRepresentation());
+        } catch (BestResultNotFound e) {
+            System.out.println(e.getMessage());
+        }
 
-        System.out.println("\n--- Содержимое после очистки ---\n");
-        basket.printBasket();
-
-        System.out.println("\n--- Стоимость пустой корзины ---\n");
-        System.out.println(basket.getTotalPrice());
-
-        System.out.println("\n--- Поиск в пустой корзине ---\n");
-        System.out.println(basket.containsProductByName("Хлеб"));
+        // 4. Сценарий: объект не найден (исключение)
+        try {
+            Searchable best = engine.findBestMatch("банан");
+            System.out.println("Лучший результат для 'банан':");
+            System.out.println(best.getStringRepresentation());
+        } catch (BestResultNotFound e) {
+            System.out.println("Поймали исключение: " + e.getMessage());
+        }
     }
 }
